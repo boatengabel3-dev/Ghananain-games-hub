@@ -30,7 +30,6 @@ export default function Header({
 
   const navItems = [
     { id: 'home', label: 'Welcome Home' },
-    { id: 'play-oware', label: 'Oware (3D)' },
     { id: 'games', label: 'Ghanaian Games' },
     { id: 'stories', label: 'Heritage Stories' },
     { id: 'elder', label: 'Nana Kwame (AI)' },

@@ -8,7 +8,6 @@ import StoriesSection from './components/StoriesSection';
 import AiElderChat from './components/AiElderChat';
 import AdminDashboard from './components/AdminDashboard';
 import GameDetailModal from './components/GameDetailModal';
-import PlayableOware from './components/PlayableOware';
 import PlayableAmpe from './components/PlayableAmpe';
 import PlayablePilolo from './components/PlayablePilolo';
 import PlayableChaskele from './components/PlayableChaskele';
@@ -231,8 +230,7 @@ export default function App() {
   };
 
   const handlePlayGame = (gameId: string) => {
-    if (gameId === 'oware') navigateToTab('play-oware');
-    else if (gameId === 'ampe') navigateToTab('play-ampe');
+    if (gameId === 'ampe') navigateToTab('play-ampe');
     else if (gameId === 'pilolo') navigateToTab('play-pilolo');
     else if (gameId === 'chaskele') navigateToTab('play-chaskele');
     else {
@@ -251,7 +249,6 @@ export default function App() {
   // Mobile Bottom Navigation Bar Items
   const mobileNavItems = [
     { id: 'home', label: 'Home', icon: Home },
-    { id: 'play-oware', label: 'Oware 3D', icon: Trophy },
     { id: 'games', label: 'Games', icon: Compass },
     { id: 'stories', label: 'Stories', icon: BookOpen },
     { id: 'elder', label: 'Elder AI', icon: Bot },
@@ -298,9 +295,6 @@ export default function App() {
         )}
 
         <main className="relative min-h-[75vh] pb-24 md:pb-8">
-          {currentTab === 'play-oware' && (
-            <PlayableOware onBack={() => navigateToTab('games')} />
-          )}
           {currentTab === 'play-ampe' && (
             <PlayableAmpe onBack={() => navigateToTab('games')} />
           )}

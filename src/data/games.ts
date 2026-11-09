@@ -45,7 +45,7 @@ export const GAMES: GameItem[] = [
     difficulty: 'Medium',
     image: '/src/assets/images/ghana_oware_carved_1794255704478.jpg',
     isFeatured: true,
-    playableType: 'oware'
+    playableType: 'none'
   },
   {
     id: 'ampe',
