@@ -6,7 +6,13 @@ interface Message {
   content: string;
 }
 
-export default function AiElderChat() {
+interface AiElderChatProps {
+  elderAvatar?: string;
+}
+
+export default function AiElderChat({ elderAvatar }: AiElderChatProps = {}) {
+  const avatarUrl = elderAvatar || '/src/assets/images/ghana_adinkra_elder_1794255756821.jpg';
+
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
@@ -105,7 +111,7 @@ export default function AiElderChat() {
           <div className="flex items-center gap-4">
             <div className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-[#E5A93C] shadow-[0_0_20px_rgba(229,169,60,0.35)] shrink-0">
               <img
-                src="/src/assets/images/ghana_adinkra_elder_1794255756821.jpg"
+                src={avatarUrl}
                 alt="Nana Kwame - Akan Cultural Elder"
                 className="w-full h-full object-cover historical-sepia-img"
                 referrerPolicy="no-referrer"
@@ -142,7 +148,7 @@ export default function AiElderChat() {
               {msg.role === 'assistant' ? (
                 <div className="w-10 h-10 rounded-full overflow-hidden border border-[#E5A93C] shrink-0 shadow-sm">
                   <img
-                    src="/src/assets/images/ghana_adinkra_elder_1794255756821.jpg"
+                    src={avatarUrl}
                     alt="Nana Kwame"
                     className="w-full h-full object-cover historical-sepia-img"
                     referrerPolicy="no-referrer"
@@ -168,7 +174,7 @@ export default function AiElderChat() {
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-full overflow-hidden border border-[#E5A93C]">
                 <img
-                  src="/src/assets/images/ghana_adinkra_elder_1794255756821.jpg"
+                  src={avatarUrl}
                   alt="Nana Kwame"
                   className="w-full h-full object-cover"
                 />

@@ -1,6 +1,6 @@
 import { useState, useTransition } from 'react';
 import { GAMES, STORIES } from './data/games';
-import { GameItem } from './types';
+import { GameItem, StoryItem } from './types';
 import Header from './components/Header';
 import WelcomeHome from './components/WelcomeHome';
 import GameList from './components/GameList';
@@ -18,12 +18,66 @@ import { Sparkles, Home, Trophy, BookOpen, Compass, Bot } from 'lucide-react';
 export default function App() {
   const [currentTab, setCurrentTab] = useState<string>('home');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [gamesData, setGamesData] = useState<GameItem[]>(GAMES);
+
+  // Persistent image & content states with fallback to initial data
+  const [heroImage, setHeroImage] = useState<string>(() => {
+    return localStorage.getItem('ghana_hero_image') || '/src/assets/images/ghana_hero_banner_1794255705201.jpg';
+  });
+
+  const [elderAvatar, setElderAvatar] = useState<string>(() => {
+    return localStorage.getItem('ghana_elder_avatar') || '/src/assets/images/ghana_adinkra_elder_1794255756821.jpg';
+  });
+
+  const [gamesData, setGamesData] = useState<GameItem[]>(() => {
+    const saved = localStorage.getItem('ghana_games');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        // Fallback to default GAMES if parsing fails
+      }
+    }
+    return GAMES;
+  });
+
+  const [storiesData, setStoriesData] = useState<StoryItem[]>(() => {
+    const saved = localStorage.getItem('ghana_stories');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        // Fallback to default STORIES if parsing fails
+      }
+    }
+    return STORIES;
+  });
+
   const [selectedGame, setSelectedGame] = useState<GameItem | null>(null);
   const [theme, setTheme] = useState<'dark' | 'light' | 'kente'>('dark');
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(false);
   const [isPageLoading, setIsPageLoading] = useState<boolean>(false);
   const [, startTransition] = useTransition();
+
+  // Handlers for updating persisted data
+  const handleUpdateHeroImage = (newUrl: string) => {
+    setHeroImage(newUrl);
+    localStorage.setItem('ghana_hero_image', newUrl);
+  };
+
+  const handleUpdateElderAvatar = (newUrl: string) => {
+    setElderAvatar(newUrl);
+    localStorage.setItem('ghana_elder_avatar', newUrl);
+  };
+
+  const handleUpdateGames = (updated: GameItem[]) => {
+    setGamesData(updated);
+    localStorage.setItem('ghana_games', JSON.stringify(updated));
+  };
+
+  const handleUpdateStories = (updated: StoryItem[]) => {
+    setStoriesData(updated);
+    localStorage.setItem('ghana_stories', JSON.stringify(updated));
+  };
 
   // Function to navigate between tabs with authentic Ghanaian moment transition
   const navigateToTab = (newTab: string) => {
@@ -122,6 +176,7 @@ export default function App() {
           {/* Welcoming HomePage */}
           {currentTab === 'home' && (
             <WelcomeHome
+              heroImage={heroImage}
               onExploreGames={() => navigateToTab('games')}
               onPlayGame={handlePlayGame}
               onConsultElder={() => navigateToTab('elder')}
@@ -140,13 +195,13 @@ export default function App() {
 
           {currentTab === 'stories' && (
             <div className="py-4">
-              <StoriesSection stories={STORIES} />
+              <StoriesSection stories={storiesData} />
             </div>
           )}
 
           {currentTab === 'elder' && (
             <div className="py-4">
-              <AiElderChat />
+              <AiElderChat elderAvatar={elderAvatar} />
             </div>
           )}
 
@@ -155,8 +210,14 @@ export default function App() {
             isAdminAuthenticated ? (
               <AdminDashboard
                 games={gamesData}
+                stories={storiesData}
+                heroImage={heroImage}
+                elderAvatar={elderAvatar}
                 onBack={() => navigateToTab('home')}
-                onUpdateGames={(updated) => setGamesData(updated)}
+                onUpdateGames={handleUpdateGames}
+                onUpdateStories={handleUpdateStories}
+                onUpdateHeroImage={handleUpdateHeroImage}
+                onUpdateElderAvatar={handleUpdateElderAvatar}
               />
             ) : (
               <div className="max-w-md mx-auto my-20 p-8 rounded-3xl glass-panel text-center">

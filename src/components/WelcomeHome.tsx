@@ -5,6 +5,7 @@ interface WelcomeHomeProps {
   onPlayGame: (id: string) => void;
   onConsultElder: () => void;
   onOpenStories: () => void;
+  heroImage?: string;
 }
 
 export default function WelcomeHome({
@@ -12,14 +13,15 @@ export default function WelcomeHome({
   onPlayGame,
   onConsultElder,
   onOpenStories,
+  heroImage,
 }: WelcomeHomeProps) {
   return (
     <div className="relative min-h-[90vh] flex items-center justify-center overflow-hidden">
       {/* Full Hero Welcoming Section with Warm Image Background & Film Grain */}
       <div className="absolute inset-0 z-0 overflow-hidden">
         <img
-          src="/src/assets/images/ghana_hero_banner_1794255705201.jpg"
-          alt="Ghanaian children playing traditional games in a sunlit courtyard"
+          src={heroImage || "/src/assets/images/ghana_hero_banner_1794255705201.jpg"}
+          alt="Ghanaian traditional games banner"
           className="w-full h-full object-cover object-center scale-105 transform duration-1000 ease-out historical-sepia-img"
           referrerPolicy="no-referrer"
         />
