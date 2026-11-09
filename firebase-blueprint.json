@@ -1,0 +1,84 @@
+{
+  "entities": {
+    "SiteSettings": {
+      "title": "SiteSettings",
+      "description": "Global visual assets and settings for Ghana Games including hero banner and elder avatar",
+      "type": "object",
+      "properties": {
+        "heroImage": {
+          "type": "string",
+          "description": "URL or data URL for the homepage hero background banner",
+          "maxLength": 1000000
+        },
+        "elderAvatar": {
+          "type": "string",
+          "description": "URL or data URL for Nana Kwame Cultural AI Elder avatar",
+          "maxLength": 1000000
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp or server time of last update"
+        }
+      },
+      "required": ["heroImage", "elderAvatar"]
+    },
+    "GameAsset": {
+      "title": "GameAsset",
+      "description": "Visual artwork and metadata for a traditional Ghanaian game",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the game",
+          "maxLength": 128
+        },
+        "image": {
+          "type": "string",
+          "description": "URL or data URL of the game cover image",
+          "maxLength": 1000000
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp or server time of last update"
+        }
+      },
+      "required": ["id", "image"]
+    },
+    "StoryAsset": {
+      "title": "StoryAsset",
+      "description": "Header image and metadata for cultural stories and historical essays",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the story",
+          "maxLength": 128
+        },
+        "image": {
+          "type": "string",
+          "description": "URL or data URL of the story header image",
+          "maxLength": 1000000
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp or server time of last update"
+        }
+      },
+      "required": ["id", "image"]
+    }
+  },
+  "firestore": {
+    "/settings/{settingId}": {
+      "schema": "SiteSettings",
+      "description": "Global website configuration settings including hero banner and elder avatar"
+    },
+    "/game_assets/{gameId}": {
+      "schema": "GameAsset",
+      "description": "Cover artwork and image records for traditional games"
+    },
+    "/story_assets/{storyId}": {
+      "schema": "StoryAsset",
+      "description": "Header photography for oral traditions and essays"
+    }
+  }
+}

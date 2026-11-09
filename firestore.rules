@@ -1,0 +1,121 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Default-Deny Catch-All Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isAdmin() {
+      return isVerified() && (
+        request.auth.token.email == 'boatengsamuel6957@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isValidSettings(data) {
+      return data.keys().hasAll(['heroImage', 'elderAvatar']) &&
+             data.keys().hasOnly(['heroImage', 'elderAvatar', 'updatedAt']) &&
+             data.heroImage is string &&
+             data.heroImage.size() > 0 &&
+             data.heroImage.size() <= 1000000 &&
+             data.elderAvatar is string &&
+             data.elderAvatar.size() > 0 &&
+             data.elderAvatar.size() <= 1000000 &&
+             (!('updatedAt' in data) || data.updatedAt is string || data.updatedAt is timestamp);
+    }
+
+    function isValidGameAsset(data, gameId) {
+      return data.keys().hasAll(['id', 'image']) &&
+             data.keys().hasOnly(['id', 'image', 'name', 'category', 'updatedAt']) &&
+             data.id == gameId &&
+             data.id is string &&
+             data.id.size() > 0 &&
+             data.id.size() <= 128 &&
+             data.image is string &&
+             data.image.size() > 0 &&
+             data.image.size() <= 1000000 &&
+             (!('name' in data) || (data.name is string && data.name.size() <= 200)) &&
+             (!('category' in data) || (data.category is string && data.category.size() <= 100)) &&
+             (!('updatedAt' in data) || data.updatedAt is string || data.updatedAt is timestamp);
+    }
+
+    function isValidStoryAsset(data, storyId) {
+      return data.keys().hasAll(['id', 'image']) &&
+             data.keys().hasOnly(['id', 'image', 'title', 'updatedAt']) &&
+             data.id == storyId &&
+             data.id is string &&
+             data.id.size() > 0 &&
+             data.id.size() <= 128 &&
+             data.image is string &&
+             data.image.size() > 0 &&
+             data.image.size() <= 1000000 &&
+             (!('title' in data) || (data.title is string && data.title.size() <= 200)) &&
+             (!('updatedAt' in data) || data.updatedAt is string || data.updatedAt is timestamp);
+    }
+
+    // Settings Collection (Site Hero Banner & Elder Avatar)
+    match /settings/{settingId} {
+      allow get: if isValidId(settingId);
+      allow list: if true;
+      allow create: if isVerified() && isValidId(settingId) && isValidSettings(incoming());
+      allow update: if isVerified() && isValidId(settingId) && isValidSettings(incoming()) && (
+        incoming().diff(existing()).affectedKeys().hasOnly(['heroImage', 'elderAvatar', 'updatedAt']) ||
+        isAdmin()
+      );
+      allow delete: if isAdmin() && isValidId(settingId);
+    }
+
+    // Game Assets Collection (Traditional Games Cover Images)
+    match /game_assets/{gameId} {
+      allow get: if isValidId(gameId);
+      allow list: if true;
+      allow create: if isVerified() && isValidId(gameId) && isValidGameAsset(incoming(), gameId);
+      allow update: if isVerified() && isValidId(gameId) && isValidGameAsset(incoming(), gameId) && (
+        incoming().diff(existing()).affectedKeys().hasOnly(['id', 'image', 'name', 'category', 'updatedAt']) ||
+        isAdmin()
+      );
+      allow delete: if isAdmin() && isValidId(gameId);
+    }
+
+    // Story Assets Collection (Oral Traditions & Essay Images)
+    match /story_assets/{storyId} {
+      allow get: if isValidId(storyId);
+      allow list: if true;
+      allow create: if isVerified() && isValidId(storyId) && isValidStoryAsset(incoming(), storyId);
+      allow update: if isVerified() && isValidId(storyId) && isValidStoryAsset(incoming(), storyId) && (
+        incoming().diff(existing()).affectedKeys().hasOnly(['id', 'image', 'title', 'updatedAt']) ||
+        isAdmin()
+      );
+      allow delete: if isAdmin() && isValidId(storyId);
+    }
+
+    // Admins registry (Read-only for verifying admin status)
+    match /admins/{adminId} {
+      allow get: if isSignedIn() && isValidId(adminId);
+      allow list: if isAdmin();
+      allow write: if false; // Provisioned exclusively via cloud administrative tooling
+    }
+  }
+}

@@ -14,7 +14,12 @@ import {
   BookOpen,
   Camera,
   RotateCcw,
+  Database,
+  LogIn,
+  LogOut,
+  User as UserIcon,
 } from 'lucide-react';
+import { User } from 'firebase/auth';
 
 interface AdminDashboardProps {
   games: GameItem[];
@@ -26,6 +31,10 @@ interface AdminDashboardProps {
   onUpdateStories: (updated: StoryItem[]) => void;
   onUpdateHeroImage: (url: string) => void;
   onUpdateElderAvatar: (url: string) => void;
+  currentUser?: User | null;
+  onLoginGoogle?: () => Promise<void>;
+  onLogoutGoogle?: () => Promise<void>;
+  firestoreStatus?: 'connected' | 'syncing' | 'offline';
 }
 
 // Curated authentic Ghanaian cultural photography gallery presets
@@ -90,6 +99,10 @@ export default function AdminDashboard({
   onUpdateStories,
   onUpdateHeroImage,
   onUpdateElderAvatar,
+  currentUser,
+  onLoginGoogle,
+  onLogoutGoogle,
+  firestoreStatus = 'connected',
 }: AdminDashboardProps) {
   const [activeAdminTab, setActiveAdminTab] = useState<'hero' | 'games' | 'stories'>('hero');
   const [saveNotification, setSaveNotification] = useState<string | null>(null);
@@ -117,7 +130,7 @@ export default function AdminDashboard({
     setTimeout(() => setSaveNotification(null), 3500);
   };
 
-  // Generic file upload to Base64 Data URL
+  // High-performance image file upload optimizer (canvas-resized for optimal Firestore storage)
   const handleFileUpload = (
     e: React.ChangeEvent<HTMLInputElement>,
     onComplete: (dataUrl: string) => void
@@ -132,10 +145,37 @@ export default function AdminDashboard({
 
     const reader = new FileReader();
     reader.onload = (event) => {
-      const result = event.target?.result as string;
-      if (result) {
-        onComplete(result);
-      }
+      const rawResult = event.target?.result as string;
+      if (!rawResult) return;
+
+      const img = new Image();
+      img.onload = () => {
+        const maxDim = 1440;
+        let width = img.width;
+        let height = img.height;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressed = canvas.toDataURL('image/jpeg', 0.86);
+          onComplete(compressed);
+        } else {
+          onComplete(rawResult);
+        }
+      };
+      img.onerror = () => onComplete(rawResult);
+      img.src = rawResult;
     };
     reader.readAsDataURL(file);
   };
@@ -235,21 +275,67 @@ export default function AdminDashboard({
   return (
     <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-12 py-8 sm:py-12 pb-24">
       {/* Top Bar Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-6 border-b border-[#2C261F]">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 pb-6 border-b border-[#2C261F]">
+        <div className="flex flex-wrap items-center gap-3">
           <button
             onClick={onBack}
             className="inline-flex items-center gap-1.5 text-xs text-[#E5A93C] hover:text-[#F7D070] font-medium glass-pill px-3.5 py-1.5 rounded-full cursor-pointer shadow-sm"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Return to Public Sanctuary</span>
+            <span>Return to Sanctuary</span>
           </button>
           <span className="text-[#A39B8E] hidden sm:inline">|</span>
           <div className="flex items-center gap-2 text-xs text-[#E5A93C] font-semibold uppercase tracking-wider">
             <Shield className="w-4 h-4 text-[#E5A93C]" />
-            <span>Curator & Media Administration Console</span>
+            <span>Curator Image Console</span>
+          </div>
+          {/* Firestore Live Badge */}
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium border border-[#E5A93C]/30 bg-[#E5A93C]/10 text-[#F7D070]">
+            <Database className="w-3.5 h-3.5 text-[#E5A93C]" />
+            <span>Firestore: europe-west2</span>
+            <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
           </div>
         </div>
+
+        {/* Cloud Authentication Controls */}
+        <div className="flex items-center gap-3 self-start lg:self-auto">
+          {currentUser ? (
+            <div className="flex items-center gap-2.5 glass-panel px-3 py-1.5 rounded-full border border-emerald-500/30">
+              {currentUser.photoURL ? (
+                <img
+                  src={currentUser.photoURL}
+                  alt={currentUser.displayName || 'Admin'}
+                  className="w-5 h-5 rounded-full border border-[#E5A93C]"
+                />
+              ) : (
+                <UserIcon className="w-4 h-4 text-emerald-400" />
+              )}
+              <span className="text-xs text-[#F5F1EA] font-medium truncate max-w-[150px]">
+                {currentUser.email || currentUser.displayName}
+              </span>
+              {onLogoutGoogle && (
+                <button
+                  onClick={onLogoutGoogle}
+                  className="text-[11px] text-[#A39B8E] hover:text-[#E5A93C] ml-1 flex items-center gap-1 cursor-pointer"
+                  title="Sign out from Google"
+                >
+                  <LogOut className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+          ) : (
+            onLoginGoogle && (
+              <button
+                onClick={onLoginGoogle}
+                className="inline-flex items-center gap-1.5 bg-[#E5A93C]/15 hover:bg-[#E5A93C]/25 text-[#F7D070] text-xs font-semibold px-3.5 py-1.5 rounded-full border border-[#E5A93C]/40 transition-colors cursor-pointer"
+              >
+                <LogIn className="w-3.5 h-3.5 text-[#E5A93C]" />
+                <span>Sign in with Google Admin</span>
+              </button>
+            )
+          )}
+        </div>
+      </div>
 
         {/* Tab Switchers */}
         <div className="flex items-center gap-1.5 glass-panel p-1 rounded-full text-xs self-start sm:self-auto">
@@ -289,7 +375,6 @@ export default function AdminDashboard({
             <span>Stories Imagery ({storyList.length})</span>
           </button>
         </div>
-      </div>
 
       {/* Save Toast Notification */}
       {saveNotification && (

@@ -1,4 +1,4 @@
-import { useState, useTransition } from 'react';
+import { useState, useEffect, useTransition } from 'react';
 import { GAMES, STORIES } from './data/games';
 import { GameItem, StoryItem } from './types';
 import Header from './components/Header';
@@ -14,6 +14,21 @@ import PlayablePilolo from './components/PlayablePilolo';
 import PlayableChaskele from './components/PlayableChaskele';
 import Footer from './components/Footer';
 import { Sparkles, Home, Trophy, BookOpen, Compass, Bot } from 'lucide-react';
+import { User } from 'firebase/auth';
+import {
+  testConnection,
+  subscribeToAuth,
+  subscribeToSiteSettings,
+  subscribeToGameAssets,
+  subscribeToStoryAssets,
+  saveSiteSettingsToFirestore,
+  saveGameAssetToFirestore,
+  saveStoryAssetToFirestore,
+  loginWithGoogle,
+  logoutAdmin,
+  DEFAULT_HERO_IMAGE,
+  DEFAULT_ELDER_AVATAR,
+} from './lib/firebase';
 
 export default function App() {
   const [currentTab, setCurrentTab] = useState<string>('home');
@@ -21,11 +36,11 @@ export default function App() {
 
   // Persistent image & content states with fallback to initial data
   const [heroImage, setHeroImage] = useState<string>(() => {
-    return localStorage.getItem('ghana_hero_image') || '/src/assets/images/ghana_hero_banner_1794255705201.jpg';
+    return localStorage.getItem('ghana_hero_image') || DEFAULT_HERO_IMAGE;
   });
 
   const [elderAvatar, setElderAvatar] = useState<string>(() => {
-    return localStorage.getItem('ghana_elder_avatar') || '/src/assets/images/ghana_adinkra_elder_1794255756821.jpg';
+    return localStorage.getItem('ghana_elder_avatar') || DEFAULT_ELDER_AVATAR;
   });
 
   const [gamesData, setGamesData] = useState<GameItem[]>(() => {
@@ -55,28 +70,151 @@ export default function App() {
   const [selectedGame, setSelectedGame] = useState<GameItem | null>(null);
   const [theme, setTheme] = useState<'dark' | 'light' | 'kente'>('dark');
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(false);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [firestoreStatus, setFirestoreStatus] = useState<'connected' | 'syncing' | 'offline'>('connected');
   const [isPageLoading, setIsPageLoading] = useState<boolean>(false);
   const [, startTransition] = useTransition();
 
-  // Handlers for updating persisted data
-  const handleUpdateHeroImage = (newUrl: string) => {
+  // Initialize Firestore listeners & validation on boot
+  useEffect(() => {
+    testConnection().catch(() => {
+      setFirestoreStatus('offline');
+    });
+
+    const unsubAuth = subscribeToAuth((user) => {
+      setCurrentUser(user);
+      if (user) {
+        setIsAdminAuthenticated(true);
+      }
+    });
+
+    // Subscribe to live Firestore site settings (Hero Banner & Elder Avatar)
+    let unsubSettings: (() => void) | undefined;
+    try {
+      unsubSettings = subscribeToSiteSettings((settings) => {
+        if (settings?.heroImage) {
+          setHeroImage(settings.heroImage);
+          localStorage.setItem('ghana_hero_image', settings.heroImage);
+        }
+        if (settings?.elderAvatar) {
+          setElderAvatar(settings.elderAvatar);
+          localStorage.setItem('ghana_elder_avatar', settings.elderAvatar);
+        }
+      });
+    } catch (e) {
+      console.warn('Initial settings listener warning:', e);
+    }
+
+    // Subscribe to live Firestore game assets
+    let unsubGames: (() => void) | undefined;
+    try {
+      unsubGames = subscribeToGameAssets((assets) => {
+        if (Object.keys(assets).length > 0) {
+          setGamesData((prev) => {
+            const updated = prev.map((g) => (assets[g.id] ? { ...g, image: assets[g.id] } : g));
+            localStorage.setItem('ghana_games', JSON.stringify(updated));
+            return updated;
+          });
+        }
+      });
+    } catch (e) {
+      console.warn('Initial games listener warning:', e);
+    }
+
+    // Subscribe to live Firestore story assets
+    let unsubStories: (() => void) | undefined;
+    try {
+      unsubStories = subscribeToStoryAssets((assets) => {
+        if (Object.keys(assets).length > 0) {
+          setStoriesData((prev) => {
+            const updated = prev.map((s) => (assets[s.id] ? { ...s, image: assets[s.id] } : s));
+            localStorage.setItem('ghana_stories', JSON.stringify(updated));
+            return updated;
+          });
+        }
+      });
+    } catch (e) {
+      console.warn('Initial stories listener warning:', e);
+    }
+
+    return () => {
+      unsubAuth();
+      if (unsubSettings) unsubSettings();
+      if (unsubGames) unsubGames();
+      if (unsubStories) unsubStories();
+    };
+  }, []);
+
+  // Handlers for updating persisted data to both localStorage and Cloud Firestore
+  const handleUpdateHeroImage = async (newUrl: string) => {
     setHeroImage(newUrl);
     localStorage.setItem('ghana_hero_image', newUrl);
+    try {
+      setFirestoreStatus('syncing');
+      await saveSiteSettingsToFirestore({ heroImage: newUrl });
+      setFirestoreStatus('connected');
+    } catch (err) {
+      console.warn('Hero image stored locally; cloud sync notice:', err);
+    }
   };
 
-  const handleUpdateElderAvatar = (newUrl: string) => {
+  const handleUpdateElderAvatar = async (newUrl: string) => {
     setElderAvatar(newUrl);
     localStorage.setItem('ghana_elder_avatar', newUrl);
+    try {
+      setFirestoreStatus('syncing');
+      await saveSiteSettingsToFirestore({ elderAvatar: newUrl });
+      setFirestoreStatus('connected');
+    } catch (err) {
+      console.warn('Elder avatar stored locally; cloud sync notice:', err);
+    }
   };
 
-  const handleUpdateGames = (updated: GameItem[]) => {
+  const handleUpdateGames = async (updated: GameItem[]) => {
     setGamesData(updated);
     localStorage.setItem('ghana_games', JSON.stringify(updated));
+    setFirestoreStatus('syncing');
+    for (const g of updated) {
+      try {
+        await saveGameAssetToFirestore(g.id, g.image, { name: g.name, category: g.category });
+      } catch (err) {
+        console.warn(`Sync notice for game ${g.id}:`, err);
+      }
+    }
+    setFirestoreStatus('connected');
   };
 
-  const handleUpdateStories = (updated: StoryItem[]) => {
+  const handleUpdateStories = async (updated: StoryItem[]) => {
     setStoriesData(updated);
     localStorage.setItem('ghana_stories', JSON.stringify(updated));
+    setFirestoreStatus('syncing');
+    for (const s of updated) {
+      try {
+        await saveStoryAssetToFirestore(s.id, s.image, s.title);
+      } catch (err) {
+        console.warn(`Sync notice for story ${s.id}:`, err);
+      }
+    }
+    setFirestoreStatus('connected');
+  };
+
+  const handleLoginGoogle = async () => {
+    try {
+      const user = await loginWithGoogle();
+      setCurrentUser(user);
+      setIsAdminAuthenticated(true);
+    } catch (err) {
+      console.error('Google Sign-In error:', err);
+    }
+  };
+
+  const handleLogoutGoogle = async () => {
+    try {
+      await logoutAdmin();
+      setCurrentUser(null);
+    } catch (err) {
+      console.error('Logout error:', err);
+    }
   };
 
   // Function to navigate between tabs with authentic Ghanaian moment transition
@@ -213,6 +351,10 @@ export default function App() {
                 stories={storiesData}
                 heroImage={heroImage}
                 elderAvatar={elderAvatar}
+                currentUser={currentUser}
+                onLoginGoogle={handleLoginGoogle}
+                onLogoutGoogle={handleLogoutGoogle}
+                firestoreStatus={firestoreStatus}
                 onBack={() => navigateToTab('home')}
                 onUpdateGames={handleUpdateGames}
                 onUpdateStories={handleUpdateStories}
