@@ -1,0 +1,7 @@
+{
+  "name": "Ghana Games",
+  "description": "Explore, play, and preserve Ghana's traditional games: Oware, Ampe, Pilolo, Chaskele, Dame, and Ludo.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
