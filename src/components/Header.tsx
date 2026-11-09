@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, Palette, Menu, X, Sparkles } from 'lucide-react';
+import { Search, Palette, Menu, X, Sparkles, Trophy } from 'lucide-react';
 import GhanaGamesLogo from './GhanaGamesLogo';
 
 interface HeaderProps {
@@ -28,62 +28,67 @@ export default function Header({
     kente: 'Royal Kente',
   };
 
-  return (
-    <header className="sticky top-0 z-50 glass-header border-b border-[#2C261F]/60">
-      {/* Authentic Kente Color Accent Line across top of page */}
-      <div className="kente-border-top w-full"></div>
+  const navItems = [
+    { id: 'home', label: 'Welcome Home' },
+    { id: 'play-oware', label: 'Oware (3D)' },
+    { id: 'games', label: 'Ghanaian Games' },
+    { id: 'stories', label: 'Heritage Stories' },
+    { id: 'elder', label: 'Nana Kwame (AI)' },
+  ];
 
-      <div className="max-w-[1440px] mx-auto px-5 lg:px-12 h-[72px] flex items-center justify-between gap-6">
+  return (
+    <header className="sticky top-0 z-50 glass-header border-b border-[#2C261F]/60 backdrop-blur-2xl">
+      {/* Authentic Kente Color Accent Line across top of page */}
+      <div className="kente-border-top w-full" />
+
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-12 h-[68px] sm:h-[72px] flex items-center justify-between gap-4 sm:gap-6">
         {/* Zone 1: Official Ghana Games Logo */}
         <button
           onClick={() => setCurrentTab('home')}
-          className="cursor-pointer focus:outline-none"
+          className="cursor-pointer focus:outline-hidden text-left"
           title="Ghana Games Home"
         >
           <GhanaGamesLogo size="md" showSubtitle={true} />
         </button>
 
-        {/* Zone 2: Navigation Links for Public Users */}
-        <nav className="hidden md:flex items-center gap-7 text-[13px] font-medium h-full">
-          {[
-            { id: 'home', label: 'Welcome Home' },
-            { id: 'games', label: 'Ghanaian Games' },
-            { id: 'stories', label: 'Heritage Stories' },
-            { id: 'elder', label: 'Nana Kwame (AI)' },
-          ].map((item) => (
+        {/* Zone 2: Navigation Links for Desktop & Tablet */}
+        <nav className="hidden md:flex items-center gap-5 lg:gap-7 text-[13px] font-medium h-full">
+          {navItems.map((item) => (
             <button
               key={item.id}
               onClick={() => setCurrentTab(item.id)}
               className={`relative h-full flex items-center transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
-                currentTab === item.id ? 'text-[#E5A93C] font-semibold' : 'text-[#F5F1EA] hover:text-[#E5A93C]'
+                currentTab === item.id
+                  ? 'text-[#E5A93C] font-semibold'
+                  : 'text-[#F5F1EA] hover:text-[#E5A93C]'
               }`}
             >
-              {item.label}
+              <span>{item.label}</span>
               {currentTab === item.id && (
-                <span className="absolute bottom-2 left-1/2 -translate-x-1/2 w-6 h-[2.5px] bg-[#E5A93C] rounded-full shadow-[0_0_8px_rgba(229,169,60,0.8)]"></span>
+                <span className="absolute bottom-2 left-1/2 -translate-x-1/2 w-6 h-[2.5px] bg-[#E5A93C] rounded-full shadow-[0_0_8px_rgba(229,169,60,0.8)]" />
               )}
             </button>
           ))}
         </nav>
 
         {/* Zone 3: Actions (Search, Theme Selector, Consult Elder CTA) */}
-        <div className="flex items-center gap-3 shrink-0">
-          <div className="hidden lg:flex items-center gap-2 glass-input rounded-full px-3.5 h-9 w-[190px] focus-within:border-[#E5A93C]/70 transition-colors">
+        <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+          <div className="hidden xl:flex items-center gap-2 glass-input rounded-full px-3.5 h-9 w-[190px] focus-within:border-[#E5A93C]/70 transition-colors">
             <Search className="w-3.5 h-3.5 text-[#E5A93C]" />
             <input
               type="text"
               placeholder="Search games..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-transparent text-xs text-[#F5F1EA] placeholder:text-[#A39B8E] outline-none flex-1 min-w-0"
+              className="bg-transparent text-xs text-[#F5F1EA] placeholder:text-[#A39B8E] outline-hidden flex-1 min-w-0"
             />
           </div>
 
-          {/* Theme Switcher with Light Theme */}
+          {/* Theme Switcher */}
           <div className="relative">
             <button
               onClick={() => setThemeDropdownOpen(!themeDropdownOpen)}
-              className="flex items-center gap-1.5 glass-pill hover:border-[#E5A93C] rounded-full px-3 h-8.5 text-xs text-[#F5F1EA] transition-all cursor-pointer shadow-sm"
+              className="flex items-center gap-1.5 glass-pill hover:border-[#E5A93C] rounded-full px-2.5 sm:px-3 h-8.5 text-xs text-[#F5F1EA] transition-all cursor-pointer shadow-sm"
               title="Change Theme (Dark / Light / Kente)"
             >
               <Palette className="w-3.5 h-3.5 text-[#E5A93C]" />
@@ -91,7 +96,7 @@ export default function Header({
             </button>
 
             {themeDropdownOpen && (
-              <div className="absolute right-0 mt-2 w-48 glass-panel border border-[#E5A93C]/30 rounded-xl shadow-2xl p-1.5 z-50 text-xs animate-in fade-in-0 zoom-in-95">
+              <div className="absolute right-0 mt-2 w-48 glass-panel border border-[#E5A93C]/30 rounded-xl shadow-2xl p-1.5 z-50 text-xs animate-in fade-in-0 zoom-in-95 backdrop-blur-xl">
                 {(['dark', 'light', 'kente'] as const).map((t) => (
                   <button
                     key={t}
@@ -115,7 +120,7 @@ export default function Header({
 
           <button
             onClick={() => setCurrentTab('elder')}
-            className="hidden sm:inline-flex items-center gap-1.5 bg-[#E5A93C] hover:bg-[#F7D070] text-[#0B0A08] font-bold text-xs px-4 h-8.5 rounded-full transition-all whitespace-nowrap shadow-md hover:scale-105 cursor-pointer"
+            className="hidden sm:inline-flex items-center gap-1.5 bg-[#E5A93C] hover:bg-[#F7D070] text-[#0B0A08] font-bold text-xs px-3.5 sm:px-4 h-8.5 rounded-full transition-all whitespace-nowrap shadow-md hover:scale-105 cursor-pointer"
           >
             <Sparkles className="w-3.5 h-3.5" />
             <span>Consult Elder</span>
@@ -124,17 +129,17 @@ export default function Header({
           {/* Mobile menu trigger */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden text-[#F5F1EA] hover:text-[#E5A93C] p-1.5 rounded-lg glass-pill"
+            className="md:hidden text-[#F5F1EA] hover:text-[#E5A93C] p-2 rounded-xl glass-pill"
             aria-label="Toggle Navigation Menu"
           >
-            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
           </button>
         </div>
       </div>
 
-      {/* Mobile Menu */}
+      {/* Mobile Menu Dropdown */}
       {mobileMenuOpen && (
-        <div className="md:hidden glass-header border-b border-[#2C261F] px-5 py-4 space-y-3 animate-in fade-in-0">
+        <div className="md:hidden glass-header border-b border-[#2C261F] px-4 py-4 space-y-2 animate-in fade-in-0 duration-200 backdrop-blur-2xl">
           <div className="flex items-center gap-2 glass-input rounded-full px-3.5 h-10 mb-3">
             <Search className="w-4 h-4 text-[#E5A93C]" />
             <input
@@ -142,23 +147,20 @@ export default function Header({
               placeholder="Search games..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-transparent text-sm text-[#F5F1EA] placeholder:text-[#A39B8E] outline-none flex-1"
+              className="bg-transparent text-xs text-[#F5F1EA] placeholder:text-[#A39B8E] outline-hidden flex-1"
             />
           </div>
-          {[
-            { id: 'home', label: 'Welcome Home' },
-            { id: 'games', label: 'Ghanaian Games' },
-            { id: 'stories', label: 'Heritage Stories' },
-            { id: 'elder', label: 'Nana Kwame (AI Elder)' },
-          ].map((item) => (
+          {navItems.map((item) => (
             <button
               key={item.id}
               onClick={() => {
                 setCurrentTab(item.id);
                 setMobileMenuOpen(false);
               }}
-              className={`block w-full text-left py-2.5 px-4 rounded-xl text-sm font-medium transition-colors ${
-                currentTab === item.id ? 'bg-[#E5A93C] text-[#0B0A08] font-bold' : 'text-[#F5F1EA] hover:bg-[#14120E]'
+              className={`block w-full text-left py-2.5 px-4 rounded-xl text-xs sm:text-sm font-medium transition-colors ${
+                currentTab === item.id
+                  ? 'bg-[#E5A93C] text-[#0B0A08] font-bold shadow-sm'
+                  : 'text-[#F5F1EA] hover:bg-[#14120E]'
               }`}
             >
               {item.label}

@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Send, Sparkles, User, Heart, MessageCircle } from 'lucide-react';
-import { GoogleGenAI } from '@google/genai';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -66,40 +65,33 @@ export default function AiElderChat() {
     if (!query.trim() || loading) return;
 
     setInput('');
-    setMessages(prev => [...prev, { role: 'user', content: query.trim() }]);
+    setMessages((prev) => [...prev, { role: 'user', content: query.trim() }]);
     setLoading(true);
 
     try {
-      const apiKey = import.meta.env.VITE_GEMINI_API_KEY || (typeof process !== 'undefined' ? process.env.GEMINI_API_KEY : '');
-      
-      if (apiKey && apiKey !== 'MY_GEMINI_API_KEY') {
-        const ai = new GoogleGenAI({ apiKey });
-        const response = await ai.models.generateContent({
-          model: 'gemini-2.5-flash',
-          contents: [
-            {
-              role: 'user',
-              parts: [{
-                text: `You are Nana Kwame, an exceptionally friendly, warm, beloved Ghanaian Akan cultural elder living in Kumasi, Ghana. You speak with deep cultural warmth, respect, joy, and vivid storytelling. You love greeting users with 'Akwaaba, my dear friend!' or 'Akwaaba, me ba (my child)'. You are an encyclopedic expert on all Ghanaian traditional games (Oware, Ampe, Pilolo, Chaskele, Dame/Draughts, Ludo, Kyirem, Counters Ball), Akan proverbs, and Adinkra philosophy. Always give friendly, detailed, accurate, and encouraging answers. User question: "${query.trim()}"`
-              }]
-            }
-          ]
-        });
+      const res = await fetch('/api/elder-chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ message: query.trim() }),
+      });
 
-        const reply = response.text || getKnowledgeableFallback(query);
-        setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
-      } else {
-        setTimeout(() => {
-          const fallback = getKnowledgeableFallback(query);
-          setMessages(prev => [...prev, { role: 'assistant', content: fallback }]);
-          setLoading(false);
-        }, 500);
-        return;
+      if (res.ok) {
+        const data = await res.json();
+        if (data.reply && typeof data.reply === 'string') {
+          setMessages((prev) => [...prev, { role: 'assistant', content: data.reply }]);
+          return;
+        }
       }
-    } catch (err) {
-      console.error(err);
+
+      // If server signals fallback or key isn't provided, use rich cultural fallback
       const fallback = getKnowledgeableFallback(query);
-      setMessages(prev => [...prev, { role: 'assistant', content: fallback }]);
+      setMessages((prev) => [...prev, { role: 'assistant', content: fallback }]);
+    } catch (err) {
+      console.warn('Using cultural fallback:', err);
+      const fallback = getKnowledgeableFallback(query);
+      setMessages((prev) => [...prev, { role: 'assistant', content: fallback }]);
     } finally {
       setLoading(false);
     }
